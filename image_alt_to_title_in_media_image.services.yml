@@ -1,0 +1,4 @@
+services:
+  image_alt_to_title_in_media_image.form_image_field_handler:
+    class: Drupal\image_alt_to_title_in_media_image\Form\FormImageFieldHandler
+    
