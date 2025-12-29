@@ -13,15 +13,15 @@ use Drupal\Core\Form\FormStateInterface;
 function image_alt_to_title_in_media_image_field_widget_single_element_form_alter(array &$element, FormStateInterface $form_state, $context) {
   $field_definition = $context['items']->getFieldDefinition();
 
+  // STRICT CHECK: Only run for the specific media image field.
+  // This prevents it from touching Menu Link titles.
   if ($field_definition && $field_definition->getName() === 'field_media_image') {
     $handler = \Drupal::service('image_alt_to_title_in_media_image.form_image_field_handler');
     
-    // Check if method exists to prevent Fatal Errors during cache transitions.
     if (method_exists($handler, 'processImageField')) {
       $handler->processImageField($element, $form_state);
     }
     
-    // Attach late-stage hide.
     if (method_exists($handler, 'afterBuildHideTitle')) {
       $element['#after_build'][] = [$handler, 'afterBuildHideTitle'];
     }
@@ -32,6 +32,7 @@ function image_alt_to_title_in_media_image_field_widget_single_element_form_alte
  * Implements hook_form_BASE_FORM_ID_alter() for media_form.
  */
 function image_alt_to_title_in_media_image_form_media_form_alter(array &$form, FormStateInterface $form_state, $form_id) {
+  // Only target Media Entities.
   $handler = \Drupal::service('image_alt_to_title_in_media_image.form_image_field_handler');
   if (method_exists($handler, 'alterForm')) {
     $handler->alterForm($form, $form_state);
@@ -50,11 +51,8 @@ function image_alt_to_title_in_media_image_form_media_library_widget_form_alter(
 
 /**
  * Implements hook_preprocess_image().
- *
- * This ensures the Title attribute actually appears in the HTML <img> tag code.
  */
 function image_alt_to_title_in_media_image_preprocess_image(&$variables) {
-  // If we have an Alt tag but no Title tag, copy the Alt to the Title.
   if (!empty($variables['attributes']['alt']) && empty($variables['attributes']['title'])) {
     $variables['attributes']['title'] = $variables['attributes']['alt'];
   }

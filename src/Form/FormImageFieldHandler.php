@@ -33,24 +33,36 @@ class FormImageFieldHandler {
     $form['#validate'][] = [$this, 'validateForm'];
   }
 
+  /**
+   * NO RECURSION: Only hides title if it's inside the provided element.
+   */
   public function hideTitleField(array &$element) {
     if (!is_array($element)) return;
 
-    if (isset($element['title'])) $element['title']['#access'] = FALSE;
-    if (isset($element['image']['title'])) $element['image']['title']['#access'] = FALSE;
+    // Target standard image widget structure only.
+    if (isset($element['title'])) {
+      $element['title']['#access'] = FALSE;
+    }
+    if (isset($element['image']['title'])) {
+      $element['image']['title']['#access'] = FALSE;
+    }
 
+    // Check one level deep for multi-value widgets.
     foreach (Element::children($element) as $key) {
-      if (isset($element[$key]['title'])) {
-        $element[$key]['title']['#access'] = FALSE;
-      }
-      if (isset($element[$key]['image']['title'])) {
-        $element[$key]['image']['title']['#access'] = FALSE;
+      if (is_numeric($key)) {
+        if (isset($element[$key]['title'])) $element[$key]['title']['#access'] = FALSE;
+        if (isset($element[$key]['image']['title'])) $element[$key]['image']['title']['#access'] = FALSE;
       }
     }
   }
 
+  /**
+   * Safe afterbuild that ONLY looks for field_media_image.
+   */
   public function afterBuildHideTitle(array $element, FormStateInterface $form_state) {
-    $this->hideTitleField($element);
+    if (isset($element['#field_name']) && $element['#field_name'] === 'field_media_image') {
+      $this->hideTitleField($element);
+    }
     return $element;
   }
 
@@ -65,7 +77,6 @@ class FormImageFieldHandler {
   protected function syncAltToTitle(FormStateInterface $form_state) {
     $values = $form_state->getValues();
 
-    // Sync standard field_media_image structure
     if (!empty($values['field_media_image'])) {
       foreach ($values['field_media_image'] as $delta => $item) {
         if (is_numeric($delta) && isset($item['alt'])) {
@@ -74,7 +85,6 @@ class FormImageFieldHandler {
       }
     }
 
-    // Sync Media Library structure
     if (!empty($values['media'])) {
       foreach ($values['media'] as $delta => $media_item) {
         if (isset($media_item['field_media_image'][0]['alt'])) {
