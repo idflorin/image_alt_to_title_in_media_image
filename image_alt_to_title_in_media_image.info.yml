@@ -2,4 +2,5 @@ name: 'Image Alt to Title in Media Image'
 type: module
 description: 'Copies Alt field to Title field and hides the Title field in field_media_image'
 core_version_requirement: ^11
+version: 1.0.2
 package: Custom
