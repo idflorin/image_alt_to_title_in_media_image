@@ -9,79 +9,35 @@ use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Implements hook_field_widget_single_element_form_alter().
- *
- * Hide the Title sub-field on image widgets for field_media_image.
  */
 function image_alt_to_title_in_media_image_field_widget_single_element_form_alter(array &$element, FormStateInterface $form_state, $context) {
-  // Ensure we are dealing with field_media_image.
   $field_definition = $context['items']->getFieldDefinition();
-  $is_media_image = FALSE;
-
-  if ($field_definition && method_exists($field_definition, 'getName')) {
-    $is_media_image = ($field_definition->getName() === 'field_media_image');
+  
+  // Only target the specific media image field to prevent breaking other forms.
+  if ($field_definition && method_exists($field_definition, 'getName') && $field_definition->getName() === 'field_media_image') {
+    /** @var \Drupal\image_alt_to_title_in_media_image\Form\FormImageFieldHandler $handler */
+    $handler = \Drupal::service('image_alt_to_title_in_media_image.form_image_field_handler');
+    
+    // Use the corrected method name.
+    $handler->hideTitleField($element);
+    
+    // Sync alt to title late in the process.
+    $element['#after_build'][] = [$handler, 'afterBuildHideTitle'];
   }
-  if (!$is_media_image && isset($element['#field_name']) && $element['#field_name'] === 'field_media_image') {
-    $is_media_image = TRUE;
-  }
-
-  if (!$is_media_image) {
-    return;
-  }
-
-  /** @var \Drupal\image_alt_to_title_in_media_image\Form\FormImageFieldHandler $handler */
-  $handler = \Drupal::service('image_alt_to_title_in_media_image.form_image_field_handler');
-  // Hide title and attach validation to copy alt -> title.
-  $handler->processImageField($element, $form_state);
-
-  // Belt-and-suspenders: run after_build to hide title late in the pipeline too.
-  $element['#after_build'][] = [$handler, 'afterBuildHideTitle'];
 }
 
 /**
- * Implements hook_form_alter().
- *
- * Adds a recursive fallback to hide Title and ensures alt->title validation.
- */
-function image_alt_to_title_in_media_image_form_alter(array &$form, FormStateInterface $form_state, $form_id) {
-  /** @var \Drupal\image_alt_to_title_in_media_image\Form\FormImageFieldHandler $handler */
-  $handler = \Drupal::service('image_alt_to_title_in_media_image.form_image_field_handler');
-  $handler->alterForm($form, $form_state);
-
-  // Extra safety: hide late with after_build as well.
-  $form['#after_build'][] = [$handler, 'afterBuildHideTitle'];
-}
-
-/**
- * Implements hook_form_BASE_FORM_ID_alter() for the Media Library modal.
- *
- * BASE FORM ID: media_library_widget_form
- * Ensures the Title field is hidden in the Media Library modal as well.
+ * Implements hook_form_BASE_FORM_ID_alter() for media_library_widget_form.
  */
 function image_alt_to_title_in_media_image_form_media_library_widget_form_alter(array &$form, FormStateInterface $form_state, $form_id) {
-  /** @var \Drupal\image_alt_to_title_in_media_image\Form\FormImageFieldHandler $handler */
   $handler = \Drupal::service('image_alt_to_title_in_media_image.form_image_field_handler');
   $handler->alterMediaLibraryWidgetForm($form, $form_state);
-
-  // Make sure any late changes from other modules are overridden.
-  $form['#after_build'][] = [$handler, 'afterBuildHideTitle'];
 }
 
 /**
- * Implements hook_form_BASE_FORM_ID_alter() for Media entity add/edit forms.
- *
- * BASE FORM ID: media_form
- * This covers media add and edit pages for all bundles, including the image bundle.
+ * Implements hook_form_BASE_FORM_ID_alter() for media_form.
  */
 function image_alt_to_title_in_media_image_form_media_form_alter(array &$form, FormStateInterface $form_state, $form_id) {
-  /** @var \Drupal\image_alt_to_title_in_media_image\Form\FormImageFieldHandler $handler */
   $handler = \Drupal::service('image_alt_to_title_in_media_image.form_image_field_handler');
   $handler->alterForm($form, $form_state);
-
-  // Explicitly try to hide the field inside the media form structure.
-  if (isset($form['field_media_image'])) {
-    $handler->hideTitleField($form['field_media_image']);
-  }
-
-  // Ensure after_build runs as last resort.
-  $form['#after_build'][] = [$handler, 'afterBuildHideTitle'];
 }
