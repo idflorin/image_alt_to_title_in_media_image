@@ -1,7 +1,7 @@
 {
   "name": "idflorin/image_alt_to_title_in_media_image",
   "description": "A Drupal 11 module that hides the image Title field and automatically copies Alt text to Title in Media Image forms and the Media Library modal.",
-  "type": "drupal-module",
+  "type": "drupal-custom-module",
   "license": "GPL-2.0-or-later",
   "homepage": "https://github.com/idflorin/image_alt_to_title_in_media_image",
   "authors": [
